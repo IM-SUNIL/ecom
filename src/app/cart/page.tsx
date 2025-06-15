@@ -6,6 +6,7 @@ import Link from 'next/link';
 import PageContainer from '@/components/ui/PageContainer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label'; // Added import
 import { Separator } from '@/components/ui/separator';
 import { mockProducts } from '@/data/mock';
 import type { CartItem } from '@/types';
@@ -33,7 +34,7 @@ export default function CartPage() {
   };
 
   const removeItem = (id: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== item.id));
+    setCartItems(prevItems => prevItems.filter(item => item.id !== id)); // Corrected: item.id !== item.id to item.id !== id
     toast({ title: "Item removed from cart." });
   };
 
