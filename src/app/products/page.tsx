@@ -1,6 +1,7 @@
+
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, Suspense } from 'react';
 import ProductCard from '@/components/products/ProductCard';
 import PageContainer from '@/components/ui/PageContainer';
 import { mockProducts } from '@/data/mock';
@@ -15,18 +16,17 @@ import { Button } from '@/components/ui/button';
 import { Search, ListFilter, X } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 
-
 const uniqueCategories = Array.from(new Set(mockProducts.map(p => p.category)));
-const maxPrice = Math.max(...mockProducts.map(p => p.price), 1000); // Ensure a sensible max if no products
+const maxPriceGlobal = Math.max(...mockProducts.map(p => p.price), 1000); // Ensure a sensible max if no products
 
-export default function ProductListingPage() {
+function ProductListingContent() {
   const searchParams = useSearchParams();
   const initialCategory = searchParams.get('category');
   
   const [searchTerm, setSearchTerm] = useState('');
   const [sortOption, setSortOption] = useState('newest');
   const [selectedCategories, setSelectedCategories] = useState<string[]>(initialCategory ? [initialCategory] : []);
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPrice]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, maxPriceGlobal]);
   const [selectedRating, setSelectedRating] = useState<number>(0);
   const [showAvailableOnly, setShowAvailableOnly] = useState<boolean>(false);
   
@@ -74,7 +74,6 @@ export default function ProductListingPage() {
         break;
       case 'newest':
       default:
-        // Assuming products are somewhat ordered by ID or a date field if available
         products.sort((a, b) => parseInt(b.id) - parseInt(a.id)); 
         break;
     }
@@ -86,7 +85,7 @@ export default function ProductListingPage() {
     setSearchTerm('');
     setSortOption('newest');
     setSelectedCategories([]);
-    setPriceRange([0, maxPrice]);
+    setPriceRange([0, maxPriceGlobal]);
     setSelectedRating(0);
     setShowAvailableOnly(false);
   };
@@ -114,9 +113,9 @@ export default function ProductListingPage() {
           <AccordionTrigger className="text-lg font-semibold font-headline">Price Range</AccordionTrigger>
           <AccordionContent className="pt-4">
             <Slider
-              defaultValue={[0, maxPrice]}
+              defaultValue={[0, maxPriceGlobal]}
               min={0}
-              max={maxPrice}
+              max={maxPriceGlobal}
               step={10}
               value={priceRange}
               onValueChange={(value) => setPriceRange(value as [number, number])}
@@ -165,7 +164,6 @@ export default function ProductListingPage() {
     </div>
   );
 
-
   return (
     <PageContainer>
       <div className="mb-8 text-center">
@@ -174,20 +172,16 @@ export default function ProductListingPage() {
       </div>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Mobile Filter Button */}
         <div className="md:hidden mb-4">
             <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="w-full">
                 <ListFilter className="mr-2 h-4 w-4" /> {showFilters ? 'Hide Filters' : 'Show Filters'}
             </Button>
         </div>
         
-        {/* Filters Sidebar */}
-        {/* Desktop: always visible. Mobile: toggle with state */}
         <aside className={`md:w-1/4 lg:w-1/5 ${showFilters ? 'block' : 'hidden'} md:block pr-4`}>
           <FilterPanel />
         </aside>
 
-        {/* Products Grid & Controls */}
         <main className="flex-1">
           <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
             <div className="relative w-full sm:w-auto sm:max-w-xs">
@@ -228,5 +222,25 @@ export default function ProductListingPage() {
         </main>
       </div>
     </PageContainer>
+  );
+}
+
+function LoadingProductsFallback() {
+    return (
+        <PageContainer>
+            <div className="text-center py-20">
+                <ListFilter className="mx-auto h-12 w-12 text-muted-foreground animate-pulse mb-4" />
+                <h1 className="text-2xl font-semibold">Loading Products...</h1>
+                <p className="text-muted-foreground">Please wait while we fetch the collection.</p>
+            </div>
+        </PageContainer>
+    );
+}
+
+export default function ProductListingPage() {
+  return (
+    <Suspense fallback={<LoadingProductsFallback />}>
+      <ProductListingContent />
+    </Suspense>
   );
 }
